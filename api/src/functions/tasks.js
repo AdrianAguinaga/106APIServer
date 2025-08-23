@@ -1,16 +1,15 @@
 const { app } = require('@azure/functions');
 
-let tasks = []; // demo en memoria (no persistente)
+let tasks = [];
 
 app.http('tasks', {
-  route: 'tasks/{id?}',                 // <-- ruta con id opcional
+  route: 'tasks/{id?}',
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
     const method = request.method.toUpperCase();
     const id = request.params?.id || null;
 
-    // CORS preflight
     if (method === 'OPTIONS') {
       return {
         status: 204,
@@ -22,16 +21,14 @@ app.http('tasks', {
       };
     }
 
-    // GET /api/tasks[?name=...]
     if (method === 'GET') {
       const name = request.query.get('name');
       const data = name
         ? tasks.filter(t => (t.name || '').toLowerCase() === name.toLowerCase())
         : tasks;
-      return { status: 200, body: data, headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { status: 200, jsonBody: data, headers: { 'Access-Control-Allow-Origin': '*' } };
     }
 
-    // POST /api/tasks
     if (method === 'POST') {
       const b = await request.json();
       const task = {
@@ -46,31 +43,29 @@ app.http('tasks', {
         name: b.name ?? b.user ?? b.owner ?? null,
         createdAt: new Date().toISOString()
       };
-      if (!task.title) return { status: 400, body: { error: 'title is required' } };
+      if (!task.title) return { status: 400, jsonBody: { error: 'title is required' } };
       tasks.push(task);
-      return { status: 201, body: task, headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { status: 201, jsonBody: task, headers: { 'Access-Control-Allow-Origin': '*' } };
     }
 
-    // PUT /api/tasks/{id}
     if (method === 'PUT') {
-      if (!id) return { status: 400, body: { error: 'id required' } };
+      if (!id) return { status: 400, jsonBody: { error: 'id required' } };
       const idx = tasks.findIndex(t => t.id === id);
-      if (idx === -1) return { status: 404, body: { error: 'Not found' } };
+      if (idx === -1) return { status: 404, jsonBody: { error: 'Not found' } };
       const body = await request.json();
       tasks[idx] = { ...tasks[idx], ...body, id: tasks[idx].id, createdAt: tasks[idx].createdAt };
-      return { status: 200, body: tasks[idx], headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { status: 200, jsonBody: tasks[idx], headers: { 'Access-Control-Allow-Origin': '*' } };
     }
 
-    // DELETE /api/tasks/{id}
     if (method === 'DELETE') {
-      if (!id) return { status: 400, body: { error: 'id required' } };
+      if (!id) return { status: 400, jsonBody: { error: 'id required' } };
       const before = tasks.length;
       tasks = tasks.filter(t => t.id !== id);
       return before === tasks.length
-        ? { status: 404, body: { error: 'Not found' } }
+        ? { status: 404, jsonBody: { error: 'Not found' } }
         : { status: 204, headers: { 'Access-Control-Allow-Origin': '*' } };
     }
 
-    return { status: 405, body: { error: 'Method Not Allowed' } };
+    return { status: 405, jsonBody: { error: 'Method Not Allowed' } };
   }
 });
