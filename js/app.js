@@ -1,4 +1,4 @@
-const API = "/api/tasks"; // en SWA es misma origin; local con SWA CLI también.
+const API = "https://106API.azurewebsites.net/api/tasks"; // en SWA es misma origin; local con SWA CLI también.
 
 const dom = {
   form: document.getElementById("taskForm"),
