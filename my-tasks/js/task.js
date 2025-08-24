@@ -1,5 +1,5 @@
-// En SWA, usa mismo origen:
-const API = "/api/tasks"; // o `${location.origin}/api/tasks`
+// En SWA usa mismo origen
+const API = "/api/tasks";
 
 const dom = {
   form: document.getElementById("taskForm"),
@@ -19,7 +19,6 @@ async function getJSON(url, opts) {
   const res = await fetch(url, { headers: { "Accept": "application/json" }, ...opts });
   if (res.status === 204) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  // Algunos backends devuelven texto "jsonificado"; maneja ambos casos
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) return res.json();
   const text = await res.text();
@@ -27,21 +26,20 @@ async function getJSON(url, opts) {
 }
 
 function normalizeId(task) {
-  // Ajusta si tu backend usa otra clave (p.ej. _id)
-  return task.id || task._id || task.Id || task.ID || null;
+  return task.id ?? task._id ?? task.Id ?? task.ID ?? null;
 }
 
 function li(task) {
-  const id = normalizeId(task);
   const el = document.createElement("li");
   el.className = "item";
   el.style.borderLeftColor = task.color || "#444";
+  const id = normalizeId(task);
   if (id) el.dataset.id = id;
 
   el.innerHTML = `
     <div>
       <strong>${task.title}</strong>
-      ${task.isImportant ? '<span class="badge">★ importante</span>' : ""}
+      ${task.isImportant ? '<span class="badge">★ important</span>' : ""}
       <div class="muted">${task.desc || ""}</div>
       <div class="muted">
         ${task.date || ""} · <span class="tag">${task.status}</span> · $${Number(task.budget||0).toFixed(2)}
@@ -50,7 +48,7 @@ function li(task) {
     </div>
     <div class="actions">
       <button data-action="done">Done</button>
-      <button data-action="del">Eliminar</button>
+      <button data-action="del">Delete</button>
     </div>
   `;
   return el;
@@ -83,7 +81,7 @@ dom.form.addEventListener("submit", async (e) => {
     budget: Number(dom.budget.value || 0),
     name: dom.name.value.trim() || null,
   };
-  if (!task.title) { alert("El título es obligatorio"); return; }
+  if (!task.title) { alert("Title is required"); return; }
 
   try {
     const created = await getJSON(API, {
@@ -96,7 +94,7 @@ dom.form.addEventListener("submit", async (e) => {
     dom.form.reset();
   } catch (e) {
     console.error("POST /api/tasks failed", e);
-    alert("No se pudo guardar la tarea");
+    alert("Could not save the task");
   }
 });
 
