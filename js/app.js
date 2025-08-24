@@ -1,4 +1,5 @@
-const API = "https://106API.azurewebsites.net/api/tasks"; // en SWA es misma origin; local con SWA CLI también.
+// En SWA, usa mismo origen:
+const API = "/api/tasks"; // o `${location.origin}/api/tasks`
 
 const dom = {
   form: document.getElementById("taskForm"),
@@ -18,14 +19,24 @@ async function getJSON(url, opts) {
   const res = await fetch(url, { headers: { "Accept": "application/json" }, ...opts });
   if (res.status === 204) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  // Algunos backends devuelven texto "jsonificado"; maneja ambos casos
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return text; }
+}
+
+function normalizeId(task) {
+  // Ajusta si tu backend usa otra clave (p.ej. _id)
+  return task.id || task._id || task.Id || task.ID || null;
 }
 
 function li(task) {
+  const id = normalizeId(task);
   const el = document.createElement("li");
   el.className = "item";
   el.style.borderLeftColor = task.color || "#444";
-  el.dataset.id = task.id;
+  if (id) el.dataset.id = id;
 
   el.innerHTML = `
     <div>
@@ -80,7 +91,7 @@ dom.form.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(task),
     });
-    dom.list.prepend(li(created));
+    dom.list.prepend(li(created || task));
     dom.empty.style.display = "none";
     dom.form.reset();
   } catch (e) {
